@@ -4,6 +4,8 @@ Live Streaming from Ardrone camera to Butterfly TV
 
 You can control Ardrone 2.0 and broadcast live from Ardrone 2.0 camera to Butterfly TV with Dronefly
 
+_New contributors are welcome to this repo._
+
 Butterfly TV is a Live Stream Messaging app that makes you broadcast Live to Contacts or Social Media (Beta)
 
 <a href="https://play.google.com/store/apps/details?id=com.butterfly">
@@ -50,5 +52,5 @@ Second video is the drone above while it was broadcasting
 <a href="http://www.butterflytv.net/player.html?videoId=1417285612457"><img src="https://github.com/ButterFly-Broadcast/Dronefly/blob/master/drone_recording.png" /></a>
 
 
-
+**Reminder: Use this software with your own risk. There is no responsibility taken for any circumstances **
   
