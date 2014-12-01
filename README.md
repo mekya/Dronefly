@@ -42,6 +42,13 @@ Usage
 
 * Use software with your own risk. There is no responsibility taken in any situation
 
-Here are two videos one is directly from Ardrone camera 
+Here are two videos first one is directly from Ardrone camera that was broadcasted live to Butterfly TV 
+
+<a href="http://www.butterflytv.net/player.html?videoId=from_drone274"><img src="https://github.com/ButterFly-Broadcast/Dronefly/blob/master/from_drone_camera.png" /></a>
+
+Second video is the drone above while it was broadcasting
+<a href="http://www.butterflytv.net/player.html?videoId=1417285612457"><img src="https://github.com/ButterFly-Broadcast/Dronefly/blob/master/drone_recording.png" /></a>
+
+
 
   
