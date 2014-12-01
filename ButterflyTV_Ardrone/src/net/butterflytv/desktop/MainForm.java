@@ -99,7 +99,7 @@ public class MainForm implements KeyListener {
 		frame.setBounds(100, 100, 450, 300);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
-		frame.setTitle("Dronefly for Butterfly TV");
+		frame.setTitle("Dronefly for Butterfly TV(Beta)");
 		frame.addWindowListener(new WindowListener() {
 
 			@Override
@@ -196,7 +196,7 @@ public class MainForm implements KeyListener {
 				}
 			}
 		});
-		btnStreamArdroneCamera.setBounds(138, 241, 157, 25);
+		btnStreamArdroneCamera.setBounds(147, 241, 157, 25);
 		panel.add(btnStreamArdroneCamera);
 
 		lblStatusLabel = new JLabel("");
@@ -204,7 +204,7 @@ public class MainForm implements KeyListener {
 		panel.add(lblStatusLabel);
 
 		txtStreamname = new JTextField();
-		txtStreamname.setBounds(105, 211, 157, 18);
+		txtStreamname.setBounds(127, 211, 257, 18);
 		panel.add(txtStreamname);
 		txtStreamname.setColumns(10);
 
