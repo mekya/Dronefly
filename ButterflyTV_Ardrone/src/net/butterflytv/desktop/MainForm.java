@@ -39,6 +39,7 @@ import flex.messaging.io.amf.client.exceptions.ServerStatusException;
 
 import javax.swing.JTextField;
 import javax.swing.JCheckBox;
+import javax.swing.JTabbedPane;
 
 public class MainForm implements KeyListener {
 
@@ -52,6 +53,8 @@ public class MainForm implements KeyListener {
 	private JPanel panel;
 	private JButton btnStreamArdroneCamera;
 	private JButton btnConnectDrone;
+	
+	GoProStreamer goProStreamer = new GoProStreamer();
 
 
 	public static final String SERVER_ADDR = "54.229.106.62";
@@ -67,6 +70,8 @@ public class MainForm implements KeyListener {
 	DroneCommand command = DroneCommand.NONE;
 	private Thread droneCommandThread;
 	private boolean droneCommandStopReq = false;
+	private JTextField txtStreamname4GoPro;
+	private JButton btnStreamGoPro;
 
 	/**
 	 * Launch the application.
@@ -96,7 +101,7 @@ public class MainForm implements KeyListener {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 450, 300);
+		frame.setBounds(100, 100, 450, 350);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		frame.setTitle("Dronefly for Butterfly TV(Beta)");
@@ -130,8 +135,7 @@ public class MainForm implements KeyListener {
 			public void windowActivated(WindowEvent arg0) {	}
 		});
 		panel = new JPanel();
-		panel.setBounds(0, 0, 450, 270);
-		panel.setLayout(null);
+		panel.setBounds(0, 0, 450, 320);
 		panel.addKeyListener(this);
 		panel.addMouseListener(new MouseListener() {
 
@@ -151,7 +155,8 @@ public class MainForm implements KeyListener {
 			public void mouseClicked(MouseEvent arg0) {}
 		});
 		panel.setFocusable(true);
-		frame.getContentPane().add(panel);
+		//frame.getContentPane().add(panel);
+		panel.setLayout(null);
 
 		JLabel lblXValue = new JLabel("Left/Right/Forward/Backward: Arrow keys");
 		lblXValue.setBounds(12, 64, 350, 15);
@@ -174,15 +179,16 @@ public class MainForm implements KeyListener {
 		panel.add(emergencyResetLabel);
 
 		btnConnectDrone = new JButton(CONNECT_DRONE);
+		btnConnectDrone.setBounds(147, 12, 148, 25);
 		btnConnectDrone.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				startDrone();
 			}
 		});
-		btnConnectDrone.setBounds(147, 12, 148, 25);
 		panel.add(btnConnectDrone);
 
 		btnStreamArdroneCamera = new JButton("Start Streaming");
+		btnStreamArdroneCamera.setBounds(147, 241, 157, 25);
 		btnStreamArdroneCamera.setEnabled(false);
 		btnStreamArdroneCamera.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -196,7 +202,6 @@ public class MainForm implements KeyListener {
 				}
 			}
 		});
-		btnStreamArdroneCamera.setBounds(147, 241, 157, 25);
 		panel.add(btnStreamArdroneCamera);
 
 		lblStatusLabel = new JLabel("");
@@ -204,13 +209,74 @@ public class MainForm implements KeyListener {
 		panel.add(lblStatusLabel);
 
 		txtStreamname = new JTextField();
-		txtStreamname.setBounds(127, 211, 257, 18);
+		txtStreamname.setBounds(150, 211, 257, 18);
 		panel.add(txtStreamname);
 		txtStreamname.setColumns(10);
 
 		JLabel lblStreamName = new JLabel("Stream Name:");
-		lblStreamName.setBounds(12, 213, 97, 14);
+		lblStreamName.setBounds(12, 212, 133, 15);
 		panel.add(lblStreamName);
+		
+		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPane.setBounds(0, 0, 450, 320);
+		tabbedPane.addTab("Ardrone 2.0", panel);
+		
+		JPanel goProPanel = new JPanel();
+		goProPanel.setLayout(null);
+		goProPanel.setBounds(0, 0, 450, 320);
+		
+		
+		lblStreamName = new JLabel("Stream Name:");
+		lblStreamName.setBounds(12, 22, 133, 15);
+		goProPanel.add(lblStreamName);
+		
+		txtStreamname4GoPro = new JTextField();
+		txtStreamname4GoPro.setBounds(150, 22, 257, 18);
+		goProPanel.add(txtStreamname4GoPro);
+		txtStreamname4GoPro.setColumns(10);
+		
+		btnStreamGoPro = new JButton("Start Streaming");
+		btnStreamGoPro.setBounds(147, 61, 157, 25);
+		goProPanel.add(btnStreamGoPro);
+		
+		btnStreamGoPro.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if (goProStreamer.isStreaming() == false) {
+					if (goProStreamer.registerStream(txtStreamname4GoPro.getText())) {
+						goProStreamer.startStreamService();
+						goProStreamer.startStreaming();
+						goProStreamer.keepAlive();
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						if (goProStreamer.isStreaming() == true) {
+							btnStreamGoPro.setText("Stop Streaming");
+						}
+						else {
+							JOptionPane.showMessageDialog(null, "GoPro streaming could not be started");
+						}
+					}
+					else {
+						JOptionPane.showMessageDialog(null, "Stream registration is unsuccessfull");
+					}
+				}
+				else {
+					goProStreamer.stopStreaming();
+					btnStreamGoPro.setText("Start Streaming");
+				}
+				
+			}
+		});
+		
+		tabbedPane.addTab("GoPro4", goProPanel);
+		
+		frame.getContentPane().add(tabbedPane);
+		
+		
 
 	}
 
@@ -267,7 +333,7 @@ public class MainForm implements KeyListener {
 			streamingProcess = null;
 		}
 	}
-
+	
 	public void streamToServer() {
 		AMFConnection amfConnection = new AMFConnection();
 		amfConnection.setObjectEncoding(MessageIOConstants.AMF0);
