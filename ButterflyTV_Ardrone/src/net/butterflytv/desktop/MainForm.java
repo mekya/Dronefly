@@ -3,6 +3,8 @@ package net.butterflytv.desktop;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -21,6 +23,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import net.butterflytv.desktop.interfaces.IStatus;
+import net.butterflytv.desktop.interfaces.JoystickSpeedListener;
+
 import org.lwjgl.LWJGLException;
 import org.lwjgl.input.Controller;
 import org.lwjgl.input.Controllers;
@@ -32,6 +37,9 @@ import de.yadrone.base.configuration.ConfigurationListener;
 import de.yadrone.base.exception.ARDroneException;
 import de.yadrone.base.exception.IExceptionListener;
 import de.yadrone.base.navdata.BatteryListener;
+import de.yadrone.base.navdata.ControlState;
+import de.yadrone.base.navdata.DroneState;
+import de.yadrone.base.navdata.StateListener;
 import flex.messaging.io.MessageIOConstants;
 import flex.messaging.io.amf.client.AMFConnection;
 import flex.messaging.io.amf.client.exceptions.ClientStatusException;
@@ -40,8 +48,10 @@ import flex.messaging.io.amf.client.exceptions.ServerStatusException;
 import javax.swing.JTextField;
 import javax.swing.JCheckBox;
 import javax.swing.JTabbedPane;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
-public class MainForm implements KeyListener {
+public class MainForm implements KeyListener, IStatus, JoystickSpeedListener {
 
 	private static final String CONNECT_DRONE = "Connect Drone";
 	private static final String DRONE_CONNECTED = "Connected";
@@ -53,7 +63,7 @@ public class MainForm implements KeyListener {
 	private JPanel panel;
 	private JButton btnStreamArdroneCamera;
 	private JButton btnConnectDrone;
-	
+
 	GoProStreamer goProStreamer = new GoProStreamer();
 
 
@@ -72,6 +82,14 @@ public class MainForm implements KeyListener {
 	private boolean droneCommandStopReq = false;
 	private JTextField txtStreamname4GoPro;
 	private JButton btnStreamGoPro;
+	protected boolean isFlying;
+	private JLabel speedXLabel;
+	private JLabel speedYLabel;
+	private JLabel speedZLabel;
+	private JLabel speedSpinLabel;
+	private ArdroneJoystickController joystickController;
+	private JCheckBox chckbxJoystick;
+	private JLabel flightStatus;
 
 	/**
 	 * Launch the application.
@@ -121,7 +139,7 @@ public class MainForm implements KeyListener {
 
 			@Override
 			public void windowClosing(WindowEvent arg0) {
-				
+
 			}
 
 			@Override
@@ -158,24 +176,24 @@ public class MainForm implements KeyListener {
 		//frame.getContentPane().add(panel);
 		panel.setLayout(null);
 
-		JLabel lblXValue = new JLabel("Left/Right/Forward/Backward: Arrow keys");
-		lblXValue.setBounds(12, 64, 350, 15);
+		JLabel lblXValue = new JLabel("Lft/Rgt/Fwd/Bwd: Arrows");
+		lblXValue.setBounds(12, 64, 215, 15);
 		panel.add(lblXValue);
 
-		JLabel lblYValue = new JLabel("Spin (Left/Right): Shift + (Left Arrow/Right Arrow)");
-		lblYValue.setBounds(12, 89, 350, 15);
+		JLabel lblYValue = new JLabel("Spin (Lft/Rght): Shift+ (Lft/Rght Arrows)");
+		lblYValue.setBounds(12, 89, 283, 15);
 		panel.add(lblYValue);
 
 		JLabel lblUp = new JLabel("Up/Down: W/S");
-		lblUp.setBounds(12, 113, 200, 15);
+		lblUp.setBounds(12, 113, 111, 15);
 		panel.add(lblUp);
 
 		JLabel lblTakeofflanding = new JLabel("Takeoff/Landing: Enter/Ctrl + Space");
-		lblTakeofflanding.setBounds(12, 140, 350, 15);
+		lblTakeofflanding.setBounds(12, 140, 257, 15);
 		panel.add(lblTakeofflanding);
 
 		JLabel emergencyResetLabel = new JLabel("Emergency/Reset: Ctrl + E/R");
-		emergencyResetLabel.setBounds(12, 167, 350, 15);
+		emergencyResetLabel.setBounds(12, 167, 205, 15);
 		panel.add(emergencyResetLabel);
 
 		btnConnectDrone = new JButton(CONNECT_DRONE);
@@ -216,31 +234,92 @@ public class MainForm implements KeyListener {
 		JLabel lblStreamName = new JLabel("Stream Name:");
 		lblStreamName.setBounds(12, 212, 133, 15);
 		panel.add(lblStreamName);
-		
+
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(0, 0, 450, 320);
 		tabbedPane.addTab("Ardrone 2.0", panel);
+
+		JLabel label = new JLabel("X:");
+		label.setBounds(318, 80, 23, 15);
+		panel.add(label);
+
+		JLabel label_1 = new JLabel("Y:");
+		label_1.setBounds(318, 96, 23, 15);
+		panel.add(label_1);
+
+		JLabel label_2 = new JLabel("Z:");
+		label_2.setBounds(318, 112, 23, 15);
+		panel.add(label_2);
+
+		JLabel label_3 = new JLabel("Spin:");
+		label_3.setBounds(318, 128, 44, 15);
+		panel.add(label_3);
+
+		speedXLabel = new JLabel("0");
+		speedXLabel.setBounds(345, 80, 23, 15);
+		panel.add(speedXLabel);
+
+		speedYLabel = new JLabel("0");
+		speedYLabel.setBounds(345, 96, 23, 15);
+		panel.add(speedYLabel);
+
+		speedZLabel = new JLabel("0");
+		speedZLabel.setBounds(345, 112, 23, 15);
+		panel.add(speedZLabel);
+
+		speedSpinLabel = new JLabel("0");
+		speedSpinLabel.setBounds(365, 128, 44, 15);
+		panel.add(speedSpinLabel);
+
+		chckbxJoystick = new JCheckBox("Joystick");
+		chckbxJoystick.setEnabled(false);
+		chckbxJoystick.setBounds(300, 60, 129, 23);
+		panel.add(chckbxJoystick);
 		
+		JLabel label_4 = new JLabel("Status:");
+		label_4.setBounds(318, 144, 55, 15);
+		panel.add(label_4);
+		
+		flightStatus = new JLabel("-");
+		flightStatus.setBounds(375, 144, 60, 15);
+		panel.add(flightStatus);
+
+		chckbxJoystick.addItemListener(new ItemListener() {
+
+			@Override
+			public void itemStateChanged(ItemEvent arg0) {
+				System.out.println("dd");
+				if (joystickController.isJoystickExist()) {
+					joystickController.setEnabled(chckbxJoystick.isSelected());
+				}
+				else {
+					chckbxJoystick.setSelected(false);			
+					JOptionPane.showMessageDialog(null, "Joystick does not exist");
+				}
+
+			}
+		});
+
 		JPanel goProPanel = new JPanel();
 		goProPanel.setLayout(null);
 		goProPanel.setBounds(0, 0, 450, 320);
-		
-		
+
+
 		lblStreamName = new JLabel("Stream Name:");
 		lblStreamName.setBounds(12, 22, 133, 15);
 		goProPanel.add(lblStreamName);
-		
+
 		txtStreamname4GoPro = new JTextField();
 		txtStreamname4GoPro.setBounds(150, 22, 257, 18);
 		goProPanel.add(txtStreamname4GoPro);
 		txtStreamname4GoPro.setColumns(10);
-		
+
 		btnStreamGoPro = new JButton("Start Streaming");
 		btnStreamGoPro.setBounds(147, 61, 157, 25);
 		goProPanel.add(btnStreamGoPro);
-		
+
 		btnStreamGoPro.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if (goProStreamer.isStreaming() == false) {
@@ -268,15 +347,15 @@ public class MainForm implements KeyListener {
 					goProStreamer.stopStreaming();
 					btnStreamGoPro.setText("Start Streaming");
 				}
-				
+
 			}
 		});
-		
+
 		tabbedPane.addTab("GoPro4", goProPanel);
-		
+
 		frame.getContentPane().add(tabbedPane);
-		
-		
+
+
 
 	}
 
@@ -284,7 +363,7 @@ public class MainForm implements KeyListener {
 		if (drone == null) {
 			try {
 				drone = new ARDrone("192.168.1.1", null);
-				drone.getCommandManager().start();
+				drone.start();
 				drone.getNavDataManager().addBatteryListener(new BatteryListener() {
 					@Override
 					public void voltageChanged(int arg0) {
@@ -307,10 +386,32 @@ public class MainForm implements KeyListener {
 						System.out.println("drone exception listener");
 					}
 				});
-				btnStreamArdroneCamera.setEnabled(true);
-				btnConnectDrone.setText(DRONE_CONNECTED);
-				btnConnectDrone.setEnabled(false);
-				startCommandThread();
+				drone.getNavDataManager().addStateListener(new StateListener() {
+
+					@Override
+					public void stateChanged(DroneState state) {
+						isFlying = state.isFlying();
+					}
+
+					@Override
+					public void controlStateChanged(ControlState state) {
+
+					}
+				});
+				if (true || drone.getConfigurationManager().isConnected()) 
+				{
+					btnStreamArdroneCamera.setEnabled(true);
+					btnConnectDrone.setText(DRONE_CONNECTED);
+					btnConnectDrone.setEnabled(false);
+					chckbxJoystick.setEnabled(true);
+					startCommandThread();
+					joystickController = new ArdroneJoystickController(drone, this, this);
+				}
+				else {
+					drone.stop();
+					drone = null;
+					JOptionPane.showMessageDialog(null, "Ardrone connection isn't established");
+				}
 
 			} catch (Exception ex) {
 				JOptionPane.showMessageDialog(null, "Ardrone connection isn't established");
@@ -318,7 +419,9 @@ public class MainForm implements KeyListener {
 			}
 		}
 		else {
-			drone.getCommandManager().stop();
+			drone.stop();
+			drone = null;
+
 		}
 	}
 
@@ -333,7 +436,7 @@ public class MainForm implements KeyListener {
 			streamingProcess = null;
 		}
 	}
-	
+
 	public void streamToServer() {
 		AMFConnection amfConnection = new AMFConnection();
 		amfConnection.setObjectEncoding(MessageIOConstants.AMF0);
@@ -463,7 +566,7 @@ public class MainForm implements KeyListener {
 		case KeyEvent.VK_W:
 		case KeyEvent.VK_S:
 		case KeyEvent.VK_D:
-		
+
 			command = DroneCommand.DRONE_HOVER;
 			break;
 		case KeyEvent.VK_SPACE:
@@ -527,7 +630,7 @@ public class MainForm implements KeyListener {
 							break;
 						}
 					}
-					
+
 					if (droneCommandStopReq == true) {
 						break;
 					}
@@ -541,5 +644,25 @@ public class MainForm implements KeyListener {
 		};
 		droneCommandThread.start();
 
+	}
+
+	@Override
+	public boolean isFlying() {
+		return isFlying;
+	}
+
+	@Override
+	public void speedStatus(int speedX, int speedY, int speedZ, int speedSpin,
+			boolean takeoff) {
+		speedXLabel.setText(String.valueOf(speedX));
+		speedYLabel.setText(String.valueOf(speedY));
+		speedZLabel.setText(String.valueOf(speedZ));
+		speedSpinLabel.setText(String.valueOf(speedSpin));
+		if (takeoff == true) {
+			flightStatus.setText("takeoff");
+		}
+		else {
+			flightStatus.setText("landing");
+		}
 	}
 }
