@@ -33,6 +33,8 @@ import org.lwjgl.input.Controllers;
 import de.yadrone.apps.controlcenter.YADroneControlCenter;
 import de.yadrone.base.ARDrone;
 import de.yadrone.base.IARDrone;
+import de.yadrone.base.command.VideoBitRateMode;
+import de.yadrone.base.command.VideoCodec;
 import de.yadrone.base.configuration.ConfigurationListener;
 import de.yadrone.base.exception.ARDroneException;
 import de.yadrone.base.exception.IExceptionListener;
@@ -398,6 +400,10 @@ public class MainForm implements KeyListener, IStatus, JoystickSpeedListener {
 
 					}
 				});
+				drone.getCommandManager().setMaxVideoBitrate(4000);
+				drone.getCommandManager().setVideoCodecFps(30);
+				drone.getCommandManager().setVideoCodec(VideoCodec.H264_720P);
+				drone.getCommandManager().setVideoBitrateControl(VideoBitRateMode.DISABLED);
 				if (true || drone.getConfigurationManager().isConnected()) 
 				{
 					btnStreamArdroneCamera.setEnabled(true);
